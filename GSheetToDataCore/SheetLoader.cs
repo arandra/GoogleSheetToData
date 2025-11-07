@@ -3,7 +3,10 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
+using Google.Apis.Util.Store;
+using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GSheetToDataCore
@@ -12,9 +15,13 @@ namespace GSheetToDataCore
     {
         private static readonly string[] Scopes = { SheetsService.Scope.SpreadsheetsReadonly };
 
-        public async Task<ValueRange> LoadSheetAsync(string spreadsheetId, string sheetName, string serviceAccountKeyPath)
+        public async Task<ValueRange> LoadSheetAsync(
+            string spreadsheetId,
+            string sheetName,
+            string clientSecretPath,
+            string? tokenStorePath = null)
         {
-            var credential = await GetCredentialsFromFile(serviceAccountKeyPath);
+            var credential = await GetUserCredentialAsync(clientSecretPath, tokenStorePath);
             var service = new SheetsService(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
@@ -27,10 +34,28 @@ namespace GSheetToDataCore
             return await request.ExecuteAsync();
         }
 
-        private async Task<GoogleCredential> GetCredentialsFromFile(string serviceAccountKeyPath)
+        private async Task<UserCredential> GetUserCredentialAsync(string clientSecretPath, string? tokenStorePath)
         {
-            await using var stream = new FileStream(serviceAccountKeyPath, FileMode.Open, FileAccess.Read);
-            return GoogleCredential.FromStream(stream).CreateScoped(Scopes);
+            var resolvedTokenStorePath = tokenStorePath;
+            if (string.IsNullOrWhiteSpace(resolvedTokenStorePath))
+            {
+                var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                resolvedTokenStorePath = Path.Combine(appData, "GoogleSheetToData", "TokenStore");
+            }
+
+            Directory.CreateDirectory(resolvedTokenStorePath);
+
+            await using var stream = new FileStream(clientSecretPath, FileMode.Open, FileAccess.Read);
+            var secrets = GoogleClientSecrets.FromStream(stream).Secrets;
+
+            var dataStore = new FileDataStore(resolvedTokenStorePath, true);
+
+            return await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                secrets,
+                Scopes,
+                "user",
+                CancellationToken.None,
+                dataStore);
         }
     }
 }

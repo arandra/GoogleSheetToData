@@ -18,11 +18,17 @@ var mockValueRange = new Google.Apis.Sheets.v4.Data.ValueRange()
 
 const string sheetName = "FieldTransform";//"ItemData";
 
-const string serviceAccountKeyFileName = "service-account-key.json";
-string serviceAccountKeyPath = Path.Combine(AppContext.BaseDirectory, serviceAccountKeyFileName);
+const string clientSecretFileName = "client_secret.json";
+const string tokenStoreFolderName = "OAuthToken";
+string clientSecretPath = Path.Combine(AppContext.BaseDirectory, clientSecretFileName);
+string tokenStorePath = Path.Combine(AppContext.BaseDirectory, tokenStoreFolderName);
 
 var loader = new SheetLoader();
-var values = await loader.LoadSheetAsync("1_2Y3BtltwsyXTovWuWV6J32x_Ebe2Sy8vybGNhzkIsM", sheetName, serviceAccountKeyPath);
+var values = await loader.LoadSheetAsync(
+    "1_2Y3BtltwsyXTovWuWV6J32x_Ebe2Sy8vybGNhzkIsM",
+    sheetName,
+    clientSecretPath,
+    tokenStorePath);
 
 var parser = new DataParser();
 var parsedData = parser.Parse(sheetName, values);// mockValueRange);
