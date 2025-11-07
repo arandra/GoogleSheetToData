@@ -47,8 +47,13 @@ namespace GSheetToDataCore
             return sb.ToString();
         }
 
-        private string Pluralize(string name)
+        public static string Pluralize(string name)
         {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return name;
+            }
+
             // Simple pluralization rules
             if (name.EndsWith("s") || name.EndsWith("x") || name.EndsWith("z") || name.EndsWith("ch") || name.EndsWith("sh"))
             {
