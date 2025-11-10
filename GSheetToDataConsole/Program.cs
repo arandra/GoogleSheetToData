@@ -17,6 +17,7 @@ var mockValueRange = new Google.Apis.Sheets.v4.Data.ValueRange()
 };
 
 const string sheetName = "FieldTransform";//"ItemData";
+const SheetDataType sheetType = SheetDataType.Table;
 
 const string clientSecretFileName = "client_secret.json";
 const string tokenStoreFolderName = "OAuthToken";
@@ -31,7 +32,7 @@ var values = await loader.LoadSheetAsync(
     tokenStorePath);
 
 var parser = new DataParser();
-var parsedData = parser.Parse(sheetName, values);// mockValueRange);
+var parsedData = parser.Parse(sheetName, values, sheetType);// mockValueRange);
 
 if (!string.IsNullOrEmpty(parsedData.ClassName))
 {

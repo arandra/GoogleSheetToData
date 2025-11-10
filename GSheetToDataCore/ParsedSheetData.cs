@@ -9,6 +9,7 @@ namespace GSheetToDataCore
         public List<string> FieldTypes { get; set; }
         public List<string> FieldNames { get; set; }
         public List<IList<object>> DataRows { get; set; }
+        public SheetDataType SheetType { get; set; }
 
         public ParsedSheetData()
         {
@@ -16,6 +17,7 @@ namespace GSheetToDataCore
             FieldTypes = new List<string>();
             FieldNames = new List<string>();
             DataRows = new List<IList<object>>();
+            SheetType = SheetDataType.Table;
         }
     }
 }

@@ -15,6 +15,7 @@ namespace GSheetToDataForUnity.Editor
         private GSheetToDataAppSettings appSettings = new GSheetToDataAppSettings();
         private string sheetId = string.Empty;
         private string sheetName = string.Empty;
+        private SheetDataType sheetType = SheetDataType.Table;
         private bool isGenerating;
         private Vector2 scroll;
 
@@ -69,6 +70,7 @@ namespace GSheetToDataForUnity.Editor
             EditorGUI.indentLevel++;
             sheetId = EditorGUILayout.TextField("Sheet ID", sheetId);
             sheetName = EditorGUILayout.TextField("Sheet Name", sheetName);
+            sheetType = (SheetDataType)EditorGUILayout.EnumPopup("Sheet Type", sheetType);
             EditorGUI.indentLevel--;
         }
 
@@ -112,7 +114,7 @@ namespace GSheetToDataForUnity.Editor
                 EditorUtility.DisplayProgressBar(WindowTitle, "Sheet 데이터 파싱 중...", 0.5f);
 
                 var parser = new DataParser();
-                var parsedData = parser.Parse(sheetName, values);
+                var parsedData = parser.Parse(sheetName, values, sheetType);
                 if (string.IsNullOrEmpty(parsedData.ClassName))
                 {
                     throw new InvalidOperationException("시트 파싱에 실패했습니다.");
@@ -124,7 +126,7 @@ namespace GSheetToDataForUnity.Editor
                 var scriptableClassName = ClassGenerator.Pluralize(parsedData.ClassName);
                 var scriptableCode = WrapWithNamespace(
                     appSettings.Namespace,
-                    GenerateScriptableObjectClass(parsedData.ClassName, scriptableClassName));
+                    GenerateScriptableObjectClass(parsedData.ClassName, scriptableClassName, parsedData.SheetType));
 
                 EditorUtility.DisplayProgressBar(WindowTitle, "스크립트 저장 중...", 0.75f);
 
@@ -143,7 +145,8 @@ namespace GSheetToDataForUnity.Editor
                     DataClassFullName = BuildFullName(parsedData.ClassName),
                     ScriptableObjectFullName = BuildFullName(scriptableClassName),
                     AssetRelativePath = assetRelativePath,
-                    JsonPayload = jsonPayload
+                    JsonPayload = jsonPayload,
+                    SheetType = parsedData.SheetType
                 };
 
                 GSheetToDataJobStore.Enqueue(job);
@@ -278,10 +281,13 @@ namespace GSheetToDataForUnity.Editor
             return builder.ToString();
         }
 
-        private static string GenerateScriptableObjectClass(string dataClassName, string scriptableClassName)
+        private static string GenerateScriptableObjectClass(string dataClassName, string scriptableClassName, SheetDataType sheetType)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("using System.Collections.Generic;");
+            if (sheetType == SheetDataType.Table)
+            {
+                builder.AppendLine("using System.Collections.Generic;");
+            }
             builder.AppendLine("using UnityEngine;");
             builder.AppendLine();
             builder.AppendLine($"[CreateAssetMenu(fileName = \"{scriptableClassName}\", menuName = \"GSheetToData/{scriptableClassName}\")]");
@@ -293,13 +299,29 @@ namespace GSheetToDataForUnity.Editor
             builder.AppendLine("    public string SheetId => sheetId;");
             builder.AppendLine("    public string SheetName => sheetName;");
             builder.AppendLine();
-            builder.AppendLine($"    public List<{dataClassName}> Values = new List<{dataClassName}>();");
+            if (sheetType == SheetDataType.Table)
+            {
+                builder.AppendLine($"    public List<{dataClassName}> Values = new List<{dataClassName}>();");
+            }
+            else
+            {
+                builder.AppendLine($"    [SerializeField] private {dataClassName} value = new {dataClassName}();");
+                builder.AppendLine($"    public {dataClassName} Value => value;");
+            }
             builder.AppendLine();
             builder.AppendLine("    public void SetSheetMetadata(string newSheetId, string newSheetName)");
             builder.AppendLine("    {");
             builder.AppendLine("        sheetId = newSheetId;");
             builder.AppendLine("        sheetName = newSheetName;");
             builder.AppendLine("    }");
+            if (sheetType == SheetDataType.Const)
+            {
+                builder.AppendLine();
+                builder.AppendLine($"    public void SetValue({dataClassName} newValue)");
+                builder.AppendLine("    {");
+                builder.AppendLine("        value = newValue;");
+                builder.AppendLine("    }");
+            }
             builder.AppendLine("}");
 
             return builder.ToString();

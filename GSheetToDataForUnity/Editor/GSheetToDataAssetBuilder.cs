@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using GSheetToDataCore;
 using Newtonsoft.Json;
 using SerializableTypes;
 using UnityEditor;
@@ -38,16 +39,20 @@ namespace GSheetToDataForUnity.Editor
                 return true;
             }
 
-            var listType = typeof(List<>).MakeGenericType(dataType);
-            var values = JsonConvert.DeserializeObject(job.JsonPayload, listType, SerializerSettings);
-
-            if (values == null)
-            {
-                values = Activator.CreateInstance(listType);
-            }
-
             var assetInstance = ScriptableObject.CreateInstance(scriptableType);
-            AssignValues(scriptableType, assetInstance, values);
+            if (job.SheetType == SheetDataType.Const)
+            {
+                var constValue = JsonConvert.DeserializeObject(job.JsonPayload, dataType, SerializerSettings)
+                                ?? Activator.CreateInstance(dataType);
+                AssignConstValue(scriptableType, assetInstance, constValue);
+            }
+            else
+            {
+                var listType = typeof(List<>).MakeGenericType(dataType);
+                var values = JsonConvert.DeserializeObject(job.JsonPayload, listType, SerializerSettings)
+                             ?? Activator.CreateInstance(listType);
+                AssignTableValues(scriptableType, assetInstance, values);
+            }
             ApplyMetadata(scriptableType, assetInstance, job.SheetId, job.SheetName);
 
             var absoluteAssetPath = GSheetToDataPathUtility.GetAbsoluteFromAssetPath(job.AssetRelativePath);
@@ -76,7 +81,7 @@ namespace GSheetToDataForUnity.Editor
             return true;
         }
 
-        private static void AssignValues(Type scriptableType, ScriptableObject instance, object values)
+        private static void AssignTableValues(Type scriptableType, ScriptableObject instance, object values)
         {
             var field = scriptableType.GetField("Values", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (field == null)
@@ -86,6 +91,27 @@ namespace GSheetToDataForUnity.Editor
             }
 
             field.SetValue(instance, values);
+        }
+
+        private static void AssignConstValue(Type scriptableType, ScriptableObject instance, object value)
+        {
+            var method = scriptableType.GetMethod("SetValue", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (method != null)
+            {
+                method.Invoke(instance, new[] { value });
+                return;
+            }
+
+            var field = scriptableType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic)
+                        ?? scriptableType.GetField("Value", BindingFlags.Instance | BindingFlags.Public);
+
+            if (field == null)
+            {
+                Debug.LogWarning($"[GSheetToData] {scriptableType.Name} 에 Const 데이터를 저장할 필드를 찾을 수 없습니다.");
+                return;
+            }
+
+            field.SetValue(instance, value);
         }
 
         private static void ApplyMetadata(Type scriptableType, ScriptableObject instance, string sheetId, string sheetName)

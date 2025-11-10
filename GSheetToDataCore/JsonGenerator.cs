@@ -21,30 +21,60 @@ namespace GSheetToDataCore
 
         public string GenerateJsonString(ParsedSheetData parsedData)
         {
-            if (parsedData == null || parsedData.FieldNames == null || parsedData.DataRows == null)
+            var isConst = parsedData?.SheetType == SheetDataType.Const;
+            var emptyPayload = isConst ? "{}" : "[]";
+
+            if (parsedData == null ||
+                parsedData.FieldNames == null ||
+                parsedData.FieldTypes == null ||
+                parsedData.DataRows == null)
             {
-                return "[]";
+                return emptyPayload;
             }
 
-            var objectList = new List<Dictionary<string, object>>();
+            if (isConst)
+            {
+                var row = parsedData.DataRows.FirstOrDefault();
+                if (row == null)
+                {
+                    return emptyPayload;
+                }
 
+                var payload = CreateObjectFromRow(row, parsedData);
+                return JsonConvert.SerializeObject(payload, jsonSerializerSettings);
+            }
+
+            var objectList = new List<Dictionary<string, object?>>();
             foreach (var row in parsedData.DataRows)
             {
-                var obj = new Dictionary<string, object>();
-                for (int i = 0; i < parsedData.FieldNames.Count; i++)
-                {
-                    if (i < row.Count && i < parsedData.FieldTypes.Count)
-                    {
-                        var fieldName = parsedData.FieldNames[i];
-                        var fieldType = parsedData.FieldTypes[i];
-                        var stringValue = row[i]?.ToString();
-                        obj[fieldName] = (object)ConvertToTypedObject(stringValue, fieldType)!;
-                    }
-                }
-                objectList.Add(obj);
+                objectList.Add(CreateObjectFromRow(row, parsedData));
             }
 
             return JsonConvert.SerializeObject(objectList, jsonSerializerSettings);
+        }
+
+        private Dictionary<string, object?> CreateObjectFromRow(IList<object> row, ParsedSheetData parsedData)
+        {
+            var obj = new Dictionary<string, object?>();
+            for (int i = 0; i < parsedData.FieldNames.Count; i++)
+            {
+                if (i >= parsedData.FieldTypes.Count)
+                {
+                    break;
+                }
+
+                var fieldName = parsedData.FieldNames[i];
+                if (string.IsNullOrWhiteSpace(fieldName))
+                {
+                    continue;
+                }
+
+                var fieldType = parsedData.FieldTypes[i];
+                var stringValue = i < row.Count ? row[i]?.ToString() : null;
+                obj[fieldName] = ConvertToTypedObject(stringValue, fieldType);
+            }
+
+            return obj;
         }
 
         private object? ConvertToTypedObject(string? value, string type)
