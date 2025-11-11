@@ -4,6 +4,7 @@
     <TargetFrameworks>net9.0;netstandard2.1</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>GSheetToData.Core</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
