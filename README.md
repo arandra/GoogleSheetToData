@@ -12,4 +12,4 @@ This repository (pulled in as the `core/` submodule) contains the .NET parsing a
 - `SerializableTypes`: Shared serialization helpers (Pair, converters).
 - `GSheetToDataConsole`: CLI runner for quick iteration outside Unity.
 
-For sheet authoring and OAuth instructions refer to the documentation placed in the Unity repo’s `Document/` folder.
+For sheet authoring and OAuth instructions refer to `Document/SheetAuthoringGuide.md` and `Document/GoogleOAuthSetup.md` inside this repository.
