@@ -1,6 +1,6 @@
 # Google OAuth Setup Guide
 
-This guide explains how to create the `client_secret.json` file required by the Unity package and how OAuth tokens are stored locally.
+This guide explains how to create the `client_secret.json` file required by GoogleSheetToData-based tools and how OAuth tokens are stored locally.
 
 ## 1. Prepare a Google Cloud Project
 1. Visit https://console.cloud.google.com and create (or select) a project.
@@ -15,14 +15,14 @@ This guide explains how to create the `client_secret.json` file required by the 
 3. Download the generated JSON file; rename it to `client_secret.json` if desired.
 
 ## 3. Store the Client Secret
-- Keep `client_secret.json` outside of version control (e.g., under `UserSettings/GSheetToData/`).
-- In Unity, open **Tools ▸ GSheetToData ▸ Generator** and point the `Client Secret Path` field to the local file.
-- The path is written to `EditorPrefs` only, so no repository changes occur.
+- Keep `client_secret.json` outside of version control (e.g., under a per-user settings folder).
+- Provide the absolute/relative path to your toolchain (Unity Settings/Asset Manager workflow, CLI runner, etc.) so it can locate the file without copying it into the repo.
+- When using the Unity package, the path is stored in `EditorPrefs` only, so no repository changes occur.
 
 ## 4. Token Storage Policy
-- When the `Token Store Path` field is empty, the generator saves per-user tokens under `<UnityProject>/Temp/GSheetToData/`.
+- By default, tokens are written to a per-user cache (Unity package: `<Project>/Temp/GSheetToData/`; CLI runners may use `~/.gsheet-to-data/`).
 - Provide a custom absolute/relative path if you need a different location; directories are created automatically.
-- Temp folders are cleared between Unity sessions, so the login flow may prompt again if the cached tokens are removed.
+- Temp folders or user caches may be cleared between sessions, so the login flow can prompt again if cached tokens disappear.
 
 ## 5. Security Tips
 - Never commit `client_secret.json` or token files. Add their directories to `.gitignore`.
@@ -30,5 +30,5 @@ This guide explains how to create the `client_secret.json` file required by the 
 - Delete unused OAuth clients in the Google Cloud console to minimize exposure.
 
 ## 6. Working with Samples
-- The JSON presets inside `Samples~/FieldTransformSample` and `Samples~/InitConstSample` include sheet IDs/names but never credentials.
+- Sample presets (e.g., Unity `Samples~/...` folders or CLI JSON inputs) include sheet IDs/names but never credentials.
 - During the first run, the Google login dialog will request permission for read-only access to Sheets; review and approve to continue.

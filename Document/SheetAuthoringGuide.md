@@ -41,7 +41,7 @@ Example:
 - Leaving the namespace empty generates global-scope classes.
 
 ## Samples
-- **FieldTransform**: Table workflow example (`Samples~/FieldTransformSample`).
-- **InitConst**: Const workflow example (`Samples~/InitConstSample`).
+- **FieldTransform**: Table workflow example. View the live sheet at [Google Sheets link](https://docs.google.com/spreadsheets/d/1_2Y3BtltwsyXTovWuWV6J32x_Ebe2Sy8vybGNhzkIsM) (`FieldTransform` tab).
+- **InitConst**: Const workflow example. Use the same sheet link (`InitConst` tab).
 
-Import a sample, follow the JSON instructions, and run the generator after finishing OAuth configuration.
+Open the shared Google Sheet, follow the tab-specific layout, finish OAuth setup, and run the generator in your target environment.
