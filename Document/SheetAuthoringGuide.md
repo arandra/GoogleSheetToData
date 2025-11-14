@@ -3,10 +3,22 @@
 GoogleSheetToData interprets each Google Sheet tab as either **Table** or **Const** mode. Follow the structure below so the Unity generator and provided samples behave consistently.
 
 ## Shared Rules
-- Row 1 defines **field types** (e.g., `string`, `int`, `float`, `bool`, `List<string>`, `Pair<string, int>`).
+- Row 1 defines **field types** using the supported identifiers listed below.
 - Row 2 defines **field names**. Use PascalCase and avoid spaces/special characters.
 - The sheet name becomes the generated class name (`FieldTransform`, `InitConst`, etc.).
 - The sheet ID comes from the spreadsheet URL segment `/d/<ID>/`. Sample data references `1_2Y3BtltwsyXTovWuWV6J32x_Ebe2Sy8vybGNhzkIsM`.
+
+### Supported Field Types
+- `string`
+- `int`
+- `float`
+- `double`
+- `bool`
+- `List<T>` where `T` is one of the scalar types above or a `Pair<TKey, TValue>`
+- `Pair<TKey, TValue>` (e.g., `Pair<string, int>`, `Pair<int, float>`)
+- Append `[]` to make an array of any supported type (`int[]`, `Pair<string, float>[]`, etc.)
+
+Type keywords are matched case-insensitively, but aliases such as `integer`, `number`, or `boolean` are not recognized—use the exact names above.
 
 ## Table Mode
 | Row | Description |
