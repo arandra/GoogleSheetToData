@@ -94,6 +94,11 @@ namespace GSheetToDataCore
             }
 
             var baseTypeName = fieldType.Substring(0, fieldType.Length - 2);
+            if (IsEnumType(baseTypeName))
+            {
+                return cells.Cast<object?>().Select(cell => cell?.ToString() ?? string.Empty).ToList();
+            }
+
             var baseType = GetSystemType(baseTypeName);
 
             if (baseType == null)
@@ -115,6 +120,11 @@ namespace GSheetToDataCore
 
         private object? ConvertToTypedObject(string? value, string type)
         {
+            if (IsEnumType(type))
+            {
+                return value ?? string.Empty;
+            }
+
             var lowerType = type.ToLower();
 
             if (lowerType.EndsWith("[]"))
@@ -257,6 +267,11 @@ namespace GSheetToDataCore
 
         private Type? GetSystemType(string typeName)
         {
+            if (IsEnumType(typeName))
+            {
+                return typeof(string);
+            }
+
             var lowerType = typeName.ToLower();
 
             if (lowerType.EndsWith("[]"))
@@ -324,6 +339,17 @@ namespace GSheetToDataCore
 
             var lower = fieldType.ToLowerInvariant();
             return lower.EndsWith("[]");
+        }
+
+        private static bool IsEnumType(string typeName)
+        {
+            if (string.IsNullOrWhiteSpace(typeName))
+            {
+                return false;
+            }
+
+            var trimmed = typeName.Trim();
+            return trimmed.StartsWith("enum(", StringComparison.OrdinalIgnoreCase) && trimmed.EndsWith(")");
         }
 
         private string ToPascalCaseOrThrow(string fieldName)

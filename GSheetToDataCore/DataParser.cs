@@ -26,12 +26,19 @@ namespace GSheetToDataCore
                 case SheetDataType.Const:
                     ParseConstSheet(valueRange.Values, parsedData);
                     break;
+                case SheetDataType.Enum:
+                    ParseEnumSheet(valueRange.Values, parsedData);
+                    break;
                 default:
                     ParseTableSheet(valueRange.Values, parsedData);
                     break;
             }
 
-            NormalizeMultiCellListFields(parsedData);
+            if (sheetType != SheetDataType.Enum)
+            {
+                NormalizeMultiCellListFields(parsedData);
+            }
+
             return parsedData;
         }
 
@@ -75,6 +82,94 @@ namespace GSheetToDataCore
             {
                 parsedData.DataRows.Add(constRow);
             }
+        }
+
+        private static void ParseEnumSheet(IList<IList<object>> rows, ParsedSheetData parsedData)
+        {
+            if (rows.Count < 2)
+            {
+                return;
+            }
+
+            var headers = rows[0];
+            var names = rows[1];
+            var usedValueColumns = new HashSet<int>();
+            int columnCount = Math.Max(headers.Count, names.Count);
+
+            for (int i = 0; i < columnCount; i++)
+            {
+                var header = GetCellString(headers, i);
+                if (!string.Equals(header, "enum", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var enumName = GetCellString(names, i);
+                if (string.IsNullOrWhiteSpace(enumName))
+                {
+                    continue;
+                }
+
+                var valueColumnIndex = FindMatchingValueColumn(headers, names, enumName, usedValueColumns);
+                if (valueColumnIndex >= 0)
+                {
+                    usedValueColumns.Add(valueColumnIndex);
+                }
+
+                var enumDefinition = new EnumDefinitionData
+                {
+                    Name = enumName
+                };
+
+                for (int rowIndex = 2; rowIndex < rows.Count; rowIndex++)
+                {
+                    var row = rows[rowIndex];
+                    var memberName = GetCellString(row, i);
+                    if (string.IsNullOrWhiteSpace(memberName))
+                    {
+                        continue;
+                    }
+
+                    var memberValue = valueColumnIndex >= 0 ? GetCellString(row, valueColumnIndex) : string.Empty;
+                    enumDefinition.Members.Add(new EnumMemberData
+                    {
+                        Name = memberName,
+                        Value = memberValue
+                    });
+                }
+
+                parsedData.EnumDefinitions.Add(enumDefinition);
+            }
+        }
+
+        private static int FindMatchingValueColumn(
+            IList<object> headers,
+            IList<object> names,
+            string enumName,
+            HashSet<int> usedValueColumns)
+        {
+            int columnCount = Math.Max(headers.Count, names.Count);
+            for (int i = 0; i < columnCount; i++)
+            {
+                if (usedValueColumns.Contains(i))
+                {
+                    continue;
+                }
+
+                var header = GetCellString(headers, i);
+                if (!string.Equals(header, "value", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var valueEnumName = GetCellString(names, i);
+                if (string.Equals(enumName, valueEnumName, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         private class ColumnMap
@@ -204,7 +299,7 @@ namespace GSheetToDataCore
                             throw new ArgumentException($"List field '{map.GroupName}' has non-empty cell after an empty cell.");
                         }
 
-                        list.Add(cellObj);
+                        list.Add(cellObj ?? string.Empty);
                     }
 
                     newRow.Add(list);

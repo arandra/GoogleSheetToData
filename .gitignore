@@ -3,3 +3,4 @@ bin/
 obj/
 service-account-key.json
 client_secret.json
+build.log

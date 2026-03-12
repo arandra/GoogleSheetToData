@@ -16,8 +16,8 @@ var mockValueRange = new Google.Apis.Sheets.v4.Data.ValueRange()
     }
 };
 
-const string sheetName = "ListTest";//"FieldTransform";//"ItemData";
-const SheetDataType sheetType = SheetDataType.Table;
+const string sheetName = "EnumTest";//"FieldTransform";//"ItemData";
+const SheetDataType sheetType = SheetDataType.Enum;
 
 const string clientSecretFileName = "client_secret.json";
 const string tokenStoreFolderName = "OAuthToken";
@@ -36,6 +36,26 @@ var parsedData = parser.Parse(sheetName, values, sheetType);// mockValueRange);
 
 if (!string.IsNullOrEmpty(parsedData.ClassName))
 {
+    if (parsedData.SheetType == SheetDataType.Enum)
+    {
+        var enumGenerator = new EnumGenerator();
+        var enumStrings = enumGenerator.GenerateEnumStrings(parsedData);
+        string enumOutputDirectory = Path.Combine(AppContext.BaseDirectory, "Output");
+        Directory.CreateDirectory(enumOutputDirectory);
+
+        foreach (var pair in enumStrings)
+        {
+            Console.WriteLine($"\n--- Generated Enum: {pair.Key} ---");
+            Console.WriteLine(pair.Value);
+
+            string enumFilePath = Path.Combine(enumOutputDirectory, $"{pair.Key}.cs");
+            File.WriteAllText(enumFilePath, pair.Value);
+            Console.WriteLine($"Enum saved to: {enumFilePath}");
+        }
+
+        return;
+    }
+
     Console.WriteLine($"ClassName: {parsedData.ClassName}");
     Console.WriteLine();
 
